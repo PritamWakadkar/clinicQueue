@@ -1,10 +1,14 @@
 import React from 'react'
 import Header from '../components/Header'
+import SpecialityMenu from '../components/specialityMenu'
+import TopDoctors from '../components/TopDoctors'
 
 const Home = () => {
   return (
-    <div className='flex items-center justify-center  '>
+    <div  >
       <Header />
+      <SpecialityMenu />
+      <TopDoctors />
     </div>
   )
 }

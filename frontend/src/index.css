@@ -5,3 +5,9 @@
 .active hr{
     @apply block
 }
+
+::-webkit-scrollbar{
+    @apply hidden
+}
+
+/* grid-cols-auto: repeat(autofill,minmax(200px,1fr)); */
