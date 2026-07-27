@@ -1,6 +1,10 @@
+ @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
  @import "tailwindcss";
 
 /* bg-[#5f6FFF] primry color */
+*{
+    font-family: outfit;
+}
 
 .active hr{
     @apply block
