@@ -33,7 +33,7 @@ const Doctors = () => {
           <p onClick={() => speciality === 'Gastroenterologist' ? nevigate('/doctors') : nevigate('/doctors/Gastroenterologist')} className={`w-[94vw] sm:w-auto pl-3 py-1.5 pr-16 border border-gray-300 rounded transition-all cursor-pointer ${speciality === "Gastroenterologist" ? "bg-indigo-100 text-black" :""}`}>Gastroenterologist</p>
         </div>
         <div className="w-full grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 gap-y-6">
-          {
+          { 
             filterDoc.map(
               (item, index) => (
                 <div
