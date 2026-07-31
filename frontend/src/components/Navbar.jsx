@@ -29,7 +29,7 @@ const Navbar = () => {
                 <hr className='border-none outline-none h-0.5  bg-[#5f6FFF] w-3/5 m-auto hidden'/>
             </NavLink>
         </ul>
-        <div className=' items-center gap-4'>
+        <div className='flex items-center gap-4'>
             {
                 Token ? <div className='flex items-center justify-between cursor-pointer gap-2 group relative'>
                     <img className='w-8 rounded-full' src={assets.profile_pic} alt="" />
@@ -44,8 +44,26 @@ const Navbar = () => {
                 </div>
                 : <button onClick={()=>nevigate('/login')} className='bg-[#5f6FFF] text-white px-8 py-2 rounded-full font-light hidden md:block'>Create Account</button>
             }
+              
+
+            <img onClick={()=>setShowMenu(true)} src={assets.menu_icon} alt="" className='w-6 md:hidden right-0' />
+            {/* ---------mobile menu -------------- */}
+
+            <div className={`${Showmenu ? 'fixed w-full':'h-0 w-0'} md:hidden top-0 right-0 bottom-0 z-20 bg-white overflow-hidden transition-all`}>
+                <div className='flex items-center justify-between px-5 py-6'>
+                    <img className='w-36' src={assets.logo} alt="" />
+                    <img className='w-7 hover:bg-blue-500  rounded-full' onClick={()=>setShowMenu(false)} src={assets.cross_icon} alt="" />
+                </div>
+                <ul className='flex items-center flex-col gap-2 mt-5 px-5 text-lg font-medium'>
+                     <NavLink  onClick={()=>setShowMenu(false)} to={'/'}> <p className='px-4 py-2 rounded inline-block'>Home</p> </NavLink>
+                     <NavLink  onClick={()=>setShowMenu(false)} to={'/doctors'}> <p className='px-4 py-2 rounded inline-block'>All doctors</p> </NavLink>
+                     <NavLink  onClick={()=>setShowMenu(false)} to={'/about'}> <p className='px-4 py-2 rounded inline-block'>about</p></NavLink>
+                     <NavLink  onClick={()=>setShowMenu(false)} to={'/contact'}> <p className='px-4 py-2 rounded inline-block'>contact</p> </NavLink>
+                </ul>
+            </div>
+            </div>
            
-        </div>
+      
     </div>
   )
 }
