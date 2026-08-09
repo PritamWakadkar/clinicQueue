@@ -3,7 +3,8 @@ import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
 import doctorModel from "../models/doctorModel.js";
 import jwt from 'jsonwebtoken'
-// API for adding doctor
+
+
 const addDoctor = async (req, res) => {
     try {
         const {
@@ -13,13 +14,16 @@ const addDoctor = async (req, res) => {
             speciality,
             degree,
             experience,
+            education,
             about,
             fees,
-            address,
-            available
+            address
         } = req.body;
 
         const imageFile = req.file;
+
+        console.log("BODY:", req.body);
+        console.log("FILE:", req.file);
 
         // Check required fields
         if (
@@ -29,15 +33,15 @@ const addDoctor = async (req, res) => {
             !speciality ||
             !degree ||
             !experience ||
+            !education ||
             !about ||
             !fees ||
             !address ||
-            !imageFile ||
-            !available
+            !imageFile
         ) {
             return res.json({
                 success: false,
-                message: "Missing Details",
+                message: "Missing Details"
             });
         }
 
@@ -45,7 +49,7 @@ const addDoctor = async (req, res) => {
         if (!validator.isEmail(email)) {
             return res.json({
                 success: false,
-                message: "Enter a valid email",
+                message: "Enter a valid email"
             });
         }
 
@@ -53,47 +57,53 @@ const addDoctor = async (req, res) => {
         if (password.length < 8) {
             return res.json({
                 success: false,
-                message: "Password should be at least 8 characters",
+                message: "Password should be at least 8 characters"
             });
         }
 
-        // Check if doctor already exists
-        const doctorExists = await doctorModel.findOne({ email });
+        // Check doctor already exists
+        const doctorExists = await doctorModel.findOne({
+            email
+        });
 
         if (doctorExists) {
             return res.json({
                 success: false,
-                message: "Doctor already exists",
+                message: "Doctor already exists"
             });
         }
 
         // Hash password
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const hashedPassword = await bcrypt.hash(
+            password,
+            salt
+        );
 
         // Upload image
         const imageUpload = await cloudinary.uploader.upload(
             imageFile.path,
             {
-                resource_type: "image",
+                resource_type: "image"
             }
         );
 
         const imageUrl = imageUpload.secure_url;
 
-        // Parse address safely
+        // Parse address
         let parsedAddress;
 
         try {
             parsedAddress = JSON.parse(address);
-        } catch (err) {
+        } catch (error) {
             return res.json({
                 success: false,
-                message: "Invalid address format",
+                message: "Invalid address format"
             });
         }
 
-        // Create doctor object
+        // Doctor data
         const doctorData = {
             name,
             email,
@@ -102,31 +112,39 @@ const addDoctor = async (req, res) => {
             speciality,
             degree,
             experience,
+            education,
             about,
             fees,
             address: parsedAddress,
+
+            // New doctors are available by default
             available: true,
-            date: Date.now(),
+
+            date: Date.now()
         };
 
-        // Save doctor
-        const newDoctor = new doctorModel(doctorData);
+        // Create doctor
+        const newDoctor = new doctorModel(
+            doctorData
+        );
+
         await newDoctor.save();
 
-        res.json({
+        return res.json({
             success: true,
-            message: "Doctor Added Successfully",
+            message: "Doctor Added Successfully"
         });
 
     } catch (error) {
-        console.log(error);
+        console.log("ADD DOCTOR ERROR:", error);
 
-        res.json({
+        return res.json({
             success: false,
-            message: error.message,
+            message: error.message
         });
     }
 };
+
 
 
 // API for admin login
@@ -168,5 +186,24 @@ const loginAdmin = async (req, res) => {
     }
 };
 
+// api to get all otors list for admin panel
 
-export { addDoctor,loginAdmin };
+const AllDoctors = async (req,res)=>{
+
+    try {
+
+        const doctors = await doctorModel.find({}).select('-password')  
+        res.json({success:true,doctors})
+
+    } catch (error) {
+         console.log(error);
+
+        return res.json({
+            success: false,
+            message: error.message,
+        }); 
+    }
+}
+
+
+export { addDoctor,loginAdmin,AllDoctors };

@@ -19,11 +19,11 @@ const AddDoctor = () => {
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
 
-  const { backendUrl, token } = useContext(AdminContext)
+  const { token,backendUrl } = useContext(AdminContext)
+
 
   const onSubmitHandler = async (event) => {
     event.preventDefault()
-
     try {
       if (!docImg) {
         return toast.error('Image not selected')
@@ -41,6 +41,7 @@ const AddDoctor = () => {
       formData.append('education', education)
       formData.append('speciality', speciality)
       formData.append('degree', degree)
+      formData.append("available", true);
       formData.append(
         'address',
         JSON.stringify({
@@ -50,13 +51,25 @@ const AddDoctor = () => {
       )
 
       formData.forEach((value, key) => {
-        console.log(`${key}:`, value)
+        console.log(`${key}:`, `${value}`)
       })
+      
+      
 
       const {data} = await axios.post(backendUrl+'/api/admin/add-doctor',formData,{headers:{token}})
       
       if(data.success){
         toast.success(data.message)
+        setDocImg(false)
+        setName('')
+        setAbout('')
+        setAddress1('')
+        setAddress2('')
+        setDegree('')
+        setEducation('')
+        setEmail('')
+        setFees('')
+        setPassword('')
       }else{
          toast.error(data.message)
       }
@@ -138,6 +151,7 @@ const AddDoctor = () => {
             <div className="flex flex-col gap-1">
               <p>Experience</p>
               <select
+               className="border rounded px-3 py-2"
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
               >
