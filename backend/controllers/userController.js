@@ -1,3 +1,7 @@
+
+import "dotenv/config";
+import Razorpay from "razorpay";
+
 import validator from "validator";
 import bycrypt from "bcrypt";
 import userModel from "../models/userModel.js";
@@ -183,117 +187,390 @@ const updateProfile = async (req, res) => {
   }
 };
 
-//API to book the appointment 
+//API to book the appointment
 
 const bookAppointment = async (req, res) => {
+  try {
+    const { docId, slotDate, slotTime } = req.body;
+
+    const userId = req.userId;
+
+    // Find doctor
+    const docData = await doctorModel.findById(docId).select("-password");
+
+    if (!docData) {
+      return res.json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
+
+    // Check doctor availability
+    if (!docData.availablity) {
+      return res.json({
+        success: false,
+        message: "Doctor not available",
+      });
+    }
+
+    let slots_booked = docData.slots_booked || {};
+
+    // Check slot availability
+    if (slots_booked[slotDate]) {
+      if (slots_booked[slotDate].includes(slotTime)) {
+        return res.json({
+          success: false,
+          message: "Slot not available",
+        });
+      }
+
+      slots_booked[slotDate].push(slotTime);
+    } else {
+      slots_booked[slotDate] = [slotTime];
+    }
+
+    // Get user
+    const userData = await userModel.findById(userId).select("-password");
+
+    console.log(userData);
+
+    if (!userData) {
+      return res.json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Remove slots_booked from doctor data
+    delete docData.slots_booked;
+
+    // Appointment data
+    const appointmentData = {
+      userId,
+      docId,
+      userData,
+      docData,
+      amount: docData.fees,
+      slotTime,
+      slotDate,
+      date: Date.now(),
+    };
+
+    // Save appointment
+    const newAppointment = new appointmentModel(appointmentData);
+
+    await newAppointment.save();
+
+    // Update doctor's booked slots
+    await doctorModel.findByIdAndUpdate(docId, {
+      slots_booked,
+    });
+
+    return res.json({
+      success: true,
+      message: "Appointment booked successfully",
+    });
+  } catch (error) {
+    console.log("BOOK APPOINTMENT ERROR:", error);
+
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// API to get user appointment for frontend my-appointment page
+
+const listAppointment = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    console.log("USER ID:", userId);
+
+    if (!userId) {
+      return res.json({
+        success: false,
+        message: "User ID not found",
+      });
+    }
+
+    const appointments = await appointmentModel.find({
+      userId: userId,
+    });
+
+    return res.json({
+      success: true,
+      appointments,
+    });
+  } catch (error) {
+    console.log("LIST APPOINTMENT ERROR:", error);
+
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// API to cancle appointment
+
+const cancelAppointment = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { appointmentId } = req.body;
+
+    // ==========================================
+    // CHECK USER
+    // ==========================================
+
+    if (!userId) {
+      return res.json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    // ==========================================
+    // CHECK APPOINTMENT ID
+    // ==========================================
+
+    if (!appointmentId) {
+      return res.json({
+        success: false,
+        message: "Appointment ID is required",
+      });
+    }
+
+    // ==========================================
+    // FIND APPOINTMENT
+    // ==========================================
+
+    const appointmentData = await appointmentModel.findById(appointmentId);
+
+    if (!appointmentData) {
+      return res.json({
+        success: false,
+        message: "Appointment not found",
+      });
+    }
+
+    // ==========================================
+    // CHECK APPOINTMENT OWNER
+    // ==========================================
+
+    if (appointmentData.userId.toString() !== userId.toString()) {
+      return res.json({
+        success: false,
+        message: "Unauthorized action",
+      });
+    }
+
+    // ==========================================
+    // CHECK ALREADY CANCELLED
+    // ==========================================
+
+    if (appointmentData.cancelled === true) {
+      return res.json({
+        success: false,
+        message: "Appointment already cancelled",
+      });
+    }
+
+    // ==========================================
+    // GET APPOINTMENT INFORMATION
+    // ==========================================
+
+    const docId = appointmentData.docId;
+    const slotDate = appointmentData.slotDate;
+    const slotTime = appointmentData.slotTime;
+
+    console.log("=================================");
+    console.log("CANCEL APPOINTMENT");
+    console.log("Doctor ID:", docId);
+    console.log("Slot Date:", slotDate);
+    console.log("Slot Time:", slotTime);
+    console.log("=================================");
+
+    // ==========================================
+    // FIND DOCTOR
+    // ==========================================
+
+    const doctorData = await doctorModel.findById(docId);
+
+    if (!doctorData) {
+      return res.json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
+
+    // ==========================================
+    // GET CURRENT BOOKED SLOTS
+    // ==========================================
+
+    const currentSlotsBooked = doctorData.slots_booked || {};
+
+    console.log("BEFORE:", JSON.stringify(currentSlotsBooked, null, 2));
+
+    // ==========================================
+    // CHECK DATE
+    // ==========================================
+
+    if (currentSlotsBooked[slotDate]) {
+      // Create new array without cancelled time
+
+      const updatedSlots = currentSlotsBooked[slotDate].filter(
+        (time) => time !== slotTime,
+      );
+
+      // ======================================
+      // UPDATE DATE
+      // ======================================
+
+      if (updatedSlots.length > 0) {
+        currentSlotsBooked[slotDate] = updatedSlots;
+      } else {
+        // No appointments left for this date
+        delete currentSlotsBooked[slotDate];
+      }
+    } else {
+      console.log("No booked slots found for date:", slotDate);
+    }
+
+    // ==========================================
+    // SAVE UPDATED DOCTOR
+    // ==========================================
+
+    doctorData.slots_booked = currentSlotsBooked;
+
+    doctorData.markModified("slots_booked");
+
+    await doctorData.save();
+
+    console.log("AFTER:", JSON.stringify(doctorData.slots_booked, null, 2));
+
+    // ==========================================
+    // MARK APPOINTMENT AS CANCELLED
+    // ==========================================
+
+    appointmentData.cancelled = true;
+
+    await appointmentData.save();
+
+    // ==========================================
+    // SUCCESS
+    // ==========================================
+
+    return res.json({
+      success: true,
+
+      message: "Appointment cancelled",
+    });
+  } catch (error) {
+    console.log("CANCEL APPOINTMENT ERROR:", error);
+
+    return res.json({
+      success: false,
+
+      message: error.message,
+    });
+  }
+};
+
+const razorpayInstance = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+ 
+//  API to make payment of appointment using razorpay
+
+const paymentRazorpay = async (req, res) => {
+  try {
+    const { appointmentId } = req.body;
+
+    const appointmentData = await appointmentModel.findById(appointmentId);
+
+    if (!appointmentData || appointmentData.cancelled) {
+      return res.json({
+        success: false,
+        message: "Appointment canceled or not found",
+      });
+    }
+
+    // creating options for razorpay payment
+
+    const options = {
+      amount: appointmentData.amount * 100,
+      currency: process.env.CURRENCY,
+      receipt: appointmentId,
+    };
+
+    // creation of an order
+
+    const order = await razorpayInstance.orders.create(options);
+
+    res.json({ success: true, order});
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// API to verfy the payment
+
+const verifyRazorpay = async (req, res) => {
     try {
+        const { razorpay_order_id } = req.body;
 
-        const {
-            docId,
-            slotDate,
-            slotTime
-        } = req.body;
-
-        const userId = req.userId
-
-        // Find doctor
-        const docData = await doctorModel
-            .findById(docId)
-            .select("-password");
-
-        if (!docData) {
+        if (!razorpay_order_id) {
             return res.json({
                 success: false,
-                message: "Doctor not found"
+                message: "Razorpay order ID is required",
             });
         }
 
-        // Check doctor availability
-        if (!docData.availablity) {
-            return res.json({
-                success: false,
-                message: "Doctor not available"
-            });
-        }
-
-        let slots_booked = docData.slots_booked || {};
-
-        // Check slot availability
-        if (slots_booked[slotDate]) {
-
-            if (slots_booked[slotDate].includes(slotTime)) {
-
-                return res.json({
-                    success: false,
-                    message: "Slot not available"
-                });
-
-            }
-
-            slots_booked[slotDate].push(slotTime);
-
-        } else {
-
-            slots_booked[slotDate] = [slotTime];
-
-        }
-
-        // Get user
-        const userData = await userModel
-            .findById(userId)
-            .select("-password");
-
-            console.log(userData);
-            
-        if (!userData) {
-            return res.json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        // Remove slots_booked from doctor data
-        delete docData.slots_booked;
-
-        // Appointment data
-        const appointmentData = {
-            userId,
-            docId,
-            userData,
-            docData,
-            amount: docData.fees,
-            slotTime,
-            slotDate,
-            date: Date.now()
-        };
-
-        // Save appointment
-        const newAppointment =
-            new appointmentModel(appointmentData);
-
-        await newAppointment.save();
-
-        // Update doctor's booked slots
-        await doctorModel.findByIdAndUpdate(
-            docId,
-            {
-                slots_booked
-            }
+        const orderInfo = await razorpayInstance.orders.fetch(
+            razorpay_order_id
         );
 
-        return res.json({
-            success: true,
-            message: "Appointment booked successfully"
-        });
+        if (orderInfo.status === "paid") {
+            await appointmentModel.findByIdAndUpdate(
+                orderInfo.receipt,
+                { payment: true }
+            );
 
+            return res.json({
+                success: true,
+                message: "Payment successful",
+            });
+        } else {
+            return res.json({
+                success: false,
+                message: "Payment failed",
+            });
+        }
     } catch (error) {
-
-        console.log("BOOK APPOINTMENT ERROR:", error);
+        console.log("Verify Razorpay Error:", error);
 
         return res.json({
             success: false,
-            message: error.message
+            message: error.message,
         });
     }
 };
-export { userRegister, userLogin, getProfile, updateProfile ,bookAppointment};
+
+export {
+  userRegister,
+  userLogin,
+  getProfile,
+  updateProfile,
+  bookAppointment,
+  listAppointment,
+  cancelAppointment,
+  paymentRazorpay,
+  verifyRazorpay
+};

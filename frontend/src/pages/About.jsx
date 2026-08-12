@@ -108,9 +108,7 @@ const About = () => {
 
       </div>
 
-      <div>
-        <p>hii</p>
-      </div>
+       
     </div>
   )
 }

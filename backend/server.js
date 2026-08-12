@@ -1,6 +1,7 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from 'express'
 import cors from 'cors'
-import dotenv from "dotenv";
 import connectDB from './config/mongodb.js'
 import connectCloudnary from './config/cloudnary.js';
 import addminRouter from './routes/adminRoutes.js';
@@ -9,8 +10,9 @@ import doctorRouter from './routes/doctorRoutes.js';
 import userRouter from './routes/userRoutes.js';
 
 // app config
+
 const app = express();
-dotenv.config();
+
 
 const port = process.env.PORT
 

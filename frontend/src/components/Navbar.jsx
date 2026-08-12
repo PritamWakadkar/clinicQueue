@@ -5,7 +5,7 @@ import { AppContext } from '../context/AppContext.jsx'
 
 const Navbar = () => {
 
-    const { token, setToken ,userData} = useContext(AppContext)
+    const { token, setToken, userData } = useContext(AppContext)
 
     const nevigate = useNavigate();
     const [Showmenu, setShowMenu] = useState(false);
@@ -39,18 +39,28 @@ const Navbar = () => {
             </ul>
             <div className='flex items-center gap-4'>
                 {
-                    token && userData                                   
-                    ? <div className='flex items-center justify-between cursor-pointer gap-2 group relative'>
-                        <img className='w-8 rounded-full' src={userData.image}  alt="" />
-                        <img className='w-2.5 pt-2' src={assets.dropdown_icon} alt="" />
-                        <div className='absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:block'>
-                            <div className='min-w-48 bg-stone-100 rounded flex flex-col p-4 gap-4 '>
-                                <p onClick={() => nevigate('/my-profile')} className='hover:text-black cursor-pointer'>My profile</p>
-                                <p onClick={() => nevigate('/my-appointments')} className='hover:text-black cursor-pointer'>My appointments</p>
-                                <p onClick={() => logOut()} className='hover:text-black cursor-pointer'>Logout</p>
+                    token && userData
+                        ? <div className='flex items-center justify-between cursor-pointer gap-2 group relative'>
+
+                            {userData?.image ? (
+                                <img
+                                    className="w-8 h-8 rounded-full object-cover"
+                                    src={userData.image}
+                                    alt="Profile"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-gray-300"></div>
+                            )}
+
+                            <img className='w-2.5 pt-2' src={assets.dropdown_icon} alt="icon" />
+                            <div className='absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:block'>
+                                <div className='min-w-48 bg-stone-100 rounded flex flex-col p-4 gap-4 '>
+                                    <p onClick={() => nevigate('/my-profile')} className='hover:text-black cursor-pointer'>My profile</p>
+                                    <p onClick={() => nevigate('/my-appointments')} className='hover:text-black cursor-pointer'>My appointments</p>
+                                    <p onClick={() => logOut()} className='hover:text-black cursor-pointer'>Logout</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
                         : <button onClick={() => nevigate('/login')} className='bg-[#5f6FFF] text-white px-8 py-2 rounded-full font-light hidden md:block'>Create Account</button>
                 }
 

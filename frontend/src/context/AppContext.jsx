@@ -123,6 +123,14 @@ const AppContextProvider = (props) => {
         }
     };
 
+    // ==================
+    // get appointment data
+    // ===================
+
+    const appointmentData=async ()=>{
+        
+    }
+
 
     // =========================
     // LOAD DOCTORS
