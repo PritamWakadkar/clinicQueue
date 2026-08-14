@@ -368,7 +368,7 @@ const appointmentCancel = async (req, res) => {
   }
 }; 
 
-// API to dashbord data
+// API to dashbord data for admin pannel
 
 const adminDashbord = async (req,res)=>{
 

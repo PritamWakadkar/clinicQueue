@@ -116,7 +116,8 @@ const AdminContextProvider = (props) => {
         try {
 
             const {data} = await axios.get(backendUrl+'/api/admin/dashBoard',{headers:{token}})
-
+            console.log(data);
+            
             if (data.success) {
                 setDashData(data.dashData)
             }else{
@@ -124,7 +125,7 @@ const AdminContextProvider = (props) => {
             }
 
         } catch (error) {
-              toast.error(data.message)
+              toast.error(error.message)
         }
     }
 
